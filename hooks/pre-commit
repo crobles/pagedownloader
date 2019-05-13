@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+const spawn = require('child_process').spawn;
+const exec = require('child_process').execSync;
+
+const gitCached = () => {
+  const gitCachedFiles = exec('git diff --cached --name-only --diff-filter=ACMR').toString().trim();
+  const cachedFiles = /\.only/g.test(gitCachedFiles);
+
+  if (cachedFiles) {
+    console.error('Please remove all your `.only`');
+    process.exit(1);
+  }
+};
+
+const eslint = () => {
+  const eslintProc = spawn('npx', ['eslint', '--ignore-path', '.gitignore', '.'], {stdio: 'inherit'});
+  eslintProc.on('close', (code) => {
+    process.exit(code);
+  });
+};
+
+gitCached();
+eslint();
