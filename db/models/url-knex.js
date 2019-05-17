@@ -34,7 +34,7 @@ const saveList = async (list) => {
       return true;
     });
     //const insertResp = await knex.table(table).insert(_list);
-    let query = knex('categorias').table(table).insert(_list).toString();
+    let query = knex().table(table).insert(_list).toString();
     let insertResp = await knex.raw( `${query}  on conflict do nothing` );
     return { success: insertResp.rowCount > 0, error: errors.join('. ') };
   } catch (error) {
@@ -58,9 +58,9 @@ const saveOrderList  =  async (orderList) => {
   }
 };
 
-const getNonChecked = async () => {
+const getNonChecked = async (limit = 100) => {
   const queryResponse = knex.table(table)
-    .where({ 'checked': false })
+    .where({ 'checked': false }).limit(limit)
     .select();
   return queryResponse;
 };
