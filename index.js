@@ -190,21 +190,7 @@ const attempt = async () => {
     period: 60
   };
   const delay = parameters.period * 1000 / (parameters.attempts + 1);
-  //TODO Get list from DB
-  const list = await models.url.getNonChecked(parameters.attempts);/* [
-    {
-      description: `accesorios-celulares Category`,
-      url: 'https://listado.mercadolibre.cl/celulares-telefonia/accesorios-celulares/#menu=categories',
-      origin: 'Category',
-      category : 'List'
-    },
-    {
-      description: `Xiaomi Mi Band 3 (reloj Inteligente) - Xiaomi Chile`,
-      url: 'https://articulo.mercadolibre.cl/MLC-474261119-xiaomi-mi-band-3-reloj-inteligente-xiaomi-chile-_JM?quantity=1',
-      origin: 'Category List',
-      category : 'Product'
-    }
-  ]; */
+  const list = await models.url.getNonChecked(parameters.attempts);
 
   for (const url of list) {
     await waitDelay(delay);
@@ -224,4 +210,56 @@ const attempt = async () => {
   process.exit(1);
 };
 
-attempt();
+//attempt();
+
+const calcAttempts = (init = Date.now(), n = Date.now()
+) => {
+  const zero = init.getTime() - 1;
+  const x = (n - zero) ^ (1 / 5);
+  const fx = Math.log10(x);
+  return 10. ^ fx;
+};
+
+let ds = [];
+let di = new Date();
+const days = 10;
+for (let index = 0; index < days * 2; index++) {
+  ds.push(new Date(di));
+  di.setHours(di.getHours() - 12 );
+}
+
+const rpm = [10, 1000];
+const yo = Math.exp( Math.log2(rpm[0]));
+const yf = Math.exp( Math.log2(rpm[1]));
+const xo = ds.pop();
+ds.push(xo);
+const xf = ds.shift();
+ds.unshift(xf);
+
+const fy = (x = Date.now()) => {
+  const a = (yf - yo) / (xf - xo);
+  const b = a * xo - yo;
+
+  const y = a * x - b;
+  return 2 ** Math.log(y);
+};
+
+const alpha = (rpm[1] / rpm[0]) ** ( 1 / ( days * 2 - 1));
+
+console.log(rpm, ds[ds.length - 1], ds[0], alpha);
+
+
+ds.reverse();
+const fz = (n) => {
+  return rpm[0] * (alpha ** n);
+};
+
+let logs = []
+
+for (const d of ds) {
+  console.log(fy(d), fz(logs.length));
+  logs.push(d);
+}
+
+
+
