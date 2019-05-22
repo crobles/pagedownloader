@@ -254,7 +254,7 @@ const fz = (n) => {
   return rpm[0] * (alpha ** n);
 };
 
-let logs = []
+let logs = []; //TODO get count from DB, so in case of system failure, the counts continues
 
 for (const d of ds) {
   console.log(fy(d), fz(logs.length));
