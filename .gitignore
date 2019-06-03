@@ -6,3 +6,4 @@ config/local*
 !config/local*.example.*
 
 .vscode/*
+docs/*

@@ -86,6 +86,16 @@ const remove = async (filter) => {
   return queryResponse;
 };
 
+const getAttempts = async () => {
+  const queryResponse = await knex.table('logs').count('id');
+  return queryResponse;
+};
+
+const saveAttempts = async (message) => {
+   const queryResponse = await knex.table('logs').insert({message});
+   return queryResponse.rowCount;
+};
+
 module.exports = {
   read,
   saveList,
@@ -94,5 +104,7 @@ module.exports = {
   getNonChecked,
   urlChecked,
   remove,
-  getNonCheckedCategory
+  getNonCheckedCategory,
+  getAttempts,
+  saveAttempts
 };

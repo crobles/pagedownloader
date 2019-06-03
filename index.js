@@ -5,14 +5,6 @@ const $ = require('cheerio');
 const models = rfr('db/models/models');
 const puppeteer = require('puppeteer');
 let browser = null;
-const urlArr = [
-  /* 'https://eshops.mercadolibre.cl/ELITE+PERFUMES',
-  'https://eshops.mercadolibre.cl/FERNAPET',
-  'https://twitter.com/',
-  'https://vestuario.mercadolibre.cl/calzados/mujer/zapatos/zapato-de-mujer_DisplayType_LF',
-  'https://listado.mercadolibre.cl/salud-belleza/perfumes-fragancias/mujer/perfume-de-mujer_DisplayType_G' */
-];
-
 
 const getUrlList = async (url, origin, category = null) => {
   try {
@@ -116,7 +108,7 @@ const getProductHtml = async (_url) => {
   const url = _url.url;
   const description = _url.description;
   const html = await dynamicHtml(url);
-  const filename = `Product${_url.id}.html`;
+  const filename = `Product_${_url.id}.html`;
   fs.writeFile(`./docs/${filename}`, html, (err) => console.error(err));
   let list = [{
     description: `${description} Seller`,
@@ -164,33 +156,29 @@ const dynamicHtml = async (url) => {
   return html;
 };
 
-const processUrls = async () => {
-  try {
-    for (const _url of urlArr) {
-      let res = { list: [], nextUrl: null };
-      let url = _url;
-      let cnt = 0;
-      do {
-        cnt += 1;
-        res = await getUrlList(url, 'SelPrdList', 'Product');
-        await models.url.saveList(res.list);
-        url = res.nextUrl;
-        await waitDelay(500); //Time to simulate human interaction
-      } while (url != null && res.list.length > 0 && cnt <= 3);
-    }
-  } catch (error) {
-    console.log(error);
-  }
+
+const fz = (n) => { //n-esima vez q corre
+  const rpm = [10, 1000]; // cantidad de intentos inicio, fin
+  const days = 10;  //cantidad de veces que se corre el script
+  const alpha = (rpm[1] / rpm[0]) ** (1 / (days * 2 - 1));
+
+  return Math.floor(rpm[0] * (alpha ** n)); //cant de attempts
 };
 
-const attempt = async () => {
+const attempt = async (period) => {
+  const m =await models.url.getAttempts();
+  console.log(m);
+  const n = fz(Number(m[0].count));
+  console.log(period, n);
+  //main
   //TODO Get parameters from DB
   const parameters = {
-    attempts: 2,
+    attempts: n,
     period: 60
   };
   const delay = parameters.period * 1000 / (parameters.attempts + 1);
   const list = await models.url.getNonChecked(parameters.attempts);
+  //process.exit(1);
 
   for (const url of list) {
     await waitDelay(delay);
@@ -206,60 +194,18 @@ const attempt = async () => {
     await models.url.urlChecked(url.id);
   }
 
+  try {
+    await models.url.saveAttempts(`Se corre un ciclo de Script con ${n} intentos`);
+  } catch (error) {
+    console.log(error);
+    await models.url.saveAttempts(error);
+  }  
+
   //TODO Recalculate next attempts per period
   process.exit(1);
 };
 
-//attempt();
-
-const calcAttempts = (init = Date.now(), n = Date.now()
-) => {
-  const zero = init.getTime() - 1;
-  const x = (n - zero) ^ (1 / 5);
-  const fx = Math.log10(x);
-  return 10. ^ fx;
-};
-
-let ds = [];
-let di = new Date();
-const days = 10;
-for (let index = 0; index < days * 2; index++) {
-  ds.push(new Date(di));
-  di.setHours(di.getHours() - 12 );
-}
-
-const rpm = [10, 1000];
-const yo = Math.exp( Math.log2(rpm[0]));
-const yf = Math.exp( Math.log2(rpm[1]));
-const xo = ds.pop();
-ds.push(xo);
-const xf = ds.shift();
-ds.unshift(xf);
-
-const fy = (x = Date.now()) => {
-  const a = (yf - yo) / (xf - xo);
-  const b = a * xo - yo;
-
-  const y = a * x - b;
-  return 2 ** Math.log(y);
-};
-
-const alpha = (rpm[1] / rpm[0]) ** ( 1 / ( days * 2 - 1));
-
-console.log(rpm, ds[ds.length - 1], ds[0], alpha);
-
-
-ds.reverse();
-const fz = (n) => {
-  return rpm[0] * (alpha ** n);
-};
-
-let logs = []; //TODO get count from DB, so in case of system failure, the counts continues
-
-for (const d of ds) {
-  console.log(fy(d), fz(logs.length));
-  logs.push(d);
-}
-
+const period = process.argv[2];
+attempt(period);
 
 
