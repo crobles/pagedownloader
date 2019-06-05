@@ -87,12 +87,12 @@ const remove = async (filter) => {
 };
 
 const getAttempts = async () => {
-  const queryResponse = await knex.table('logs').count('id');
+  const queryResponse = await knex.table('logs').where('typeScrap', '>', 0).count('id');
   return queryResponse;
 };
 
-const saveAttempts = async (message) => {
-   const queryResponse = await knex.table('logs').insert({message});
+const saveAttempts = async (message, typeScrap) => {
+   const queryResponse = await knex.table('logs').insert({message, typeScrap});
    return queryResponse.rowCount;
 };
 

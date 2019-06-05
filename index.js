@@ -110,6 +110,7 @@ const getProductHtml = async (_url) => {
   const html = await dynamicHtml(url);
   const filename = `Product_${_url.id}.html`;
   fs.writeFile(`./docs/${filename}`, html, (err) => console.error(err));
+  
   let list = [{
     description: `${description} Seller`,
     url: $('.reputation-view-more', html).attr('href'),
@@ -125,6 +126,7 @@ const getSellerHtml = async (_url) => {
   const html = await dynamicHtml(url);
   const filename = `Seller${_url.id}.html`;
   fs.writeFile(`./docs/${filename}`, html, (err) => console.error(err));
+  
 };
 
 const waitDelay = (t) => {
@@ -174,28 +176,33 @@ const attempt = async (period) => {
   //TODO Get parameters from DB
   const parameters = {
     attempts: n,
-    period: 60
+    period: period
   };
   const delay = parameters.period * 1000 / (parameters.attempts + 1);
   const list = await models.url.getNonChecked(parameters.attempts);
+  let typeScrap = 0;
   //process.exit(1);
 
   for (const url of list) {
     await waitDelay(delay);
     if (url.category == 'List') {
       await getProductsList(url);
+      typeScrap = 1;
     } else if (url.category == 'Product') {
       await getProductHtml(url);
+      typeScrap = 1;
     } else if (url.category == 'Seller') {
       await getSellerHtml(url);
+      typeScrap = 1;
     } else {
       console.error(`${url.category} is not a known reading method`);
+      typeScrap = 0;
     }
     await models.url.urlChecked(url.id);
   }
 
   try {
-    await models.url.saveAttempts(`Se corre un ciclo de Script con ${n} intentos`);
+    await models.url.saveAttempts(`Se corre un ciclo de Script con ${n} intentos`, typeScrap);
   } catch (error) {
     console.log(error);
     await models.url.saveAttempts(error);
