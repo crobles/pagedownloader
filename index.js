@@ -166,7 +166,7 @@ const attempt = async (period) => {
       const list = await models.url.getNonChecked(parameters.attempts - totalDone);
       totalDone += list.length;
       typeScrap = await doRequests(parameters, list);
-    } while (totalDone < requestsNumber || trys < 5);
+    } while (totalDone < requestsNumber && trys < 5);
     await models.url.saveAttempts(`Se corrió un ciclo de Script con ${requestsNumber} peticiones a url`, typeScrap);
     //TODO por que se almacena 'typeScrap' ??
   } catch (error) {
@@ -177,7 +177,7 @@ const attempt = async (period) => {
   process.exit(1);
 };
 
-const period = process.argv[2];
+const period = process.argv[2] || 60;
 attempt(period);
 
 
