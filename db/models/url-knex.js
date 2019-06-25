@@ -42,27 +42,10 @@ const saveList = async (list) => {
   }
 };
 
-const saveOrderList = async (orderList) => {
-  if (orderList.length > 0) {
-    const newOrderList = orderList.map(order => {
-      order.subOrders = JSON.stringify(order.subOrders);
-      order.lineOrders = JSON.stringify(order.lineOrders);
-      order.payment = JSON.stringify(order.payment);
-      order.branchs = JSON.stringify(order.branchs);
-      return order;
-    });
-    const insert = await knex.table(table).insert(newOrderList);
-    return insert.rowCount;
-  } else {
-    return null;
-  }
-};
-
 const getNonChecked = async (limit = 100) => {
-  /* const queryResponse = knex.table(table)
-    .where({ 'checked': false }).limit(limit)
-    .select(); */
-  const query = fs.readFileSync('./db/queries/balancedURL.sql', 'utf-8');
+  console.log(`Retrieving ${limit} urls`);
+  let query = fs.readFileSync('./db/queries/balancedURL.sql', 'utf-8');
+  query = query.replace(new RegExp(`#LIMIT#`, 'g'), limit); //TODO use safewords to hide important info
   const queryResponse = await knex.raw(query);
   return queryResponse['rows'];
 };
@@ -102,7 +85,6 @@ module.exports = {
   read,
   saveList,
   saveOne,
-  saveOrderList,
   getNonChecked,
   urlChecked,
   remove,
