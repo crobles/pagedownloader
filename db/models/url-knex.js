@@ -33,7 +33,6 @@ const saveList = async (list) => {
       }
       return true;
     });
-    //const insertResp = await knex.table(table).insert(_list);
     let query = knex().table(table).insert(_list).toString();
     let insertResp = await knex.raw( `${query}  on conflict do nothing` );
     return { success: insertResp.rowCount > 0, error: errors.join('. ') };

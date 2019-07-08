@@ -9,17 +9,21 @@ fs.readdir(dirname, (err, filenames) => {
     return;
   }
   filenames.forEach((filename) => {
-    fs.readFile(dirname + filename, 'utf-8', (err, content) => {
+    fs.readFile(`${dirname}${filename}`, 'utf-8', (err, content) => {
       if (err) {
         console.error(err);
         return;
       }
       storageUrl.uploadUrl(filename, content, (err) => {
-        if (err) {console.error(err);}
+        if (err) {
+          console.error(err);
+        }
       });
     });
     fs.unlink(dirname + filename, (err) => {
-      if (err) {console.error(err);}
+      if (err) {
+        console.error(err);
+      }
     });
   });
   console.log('Carga de archivos finalizada');

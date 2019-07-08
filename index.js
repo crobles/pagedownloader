@@ -8,7 +8,6 @@ let browser = null;
 const getUrlList = async (url, origin, category = null) => {
   try {
     let list = [];
-    //const html = await rp(url);
     const html = await dynamicHtml(url);
     if (!$('div.ico.view-option-stack', html).hasClass('selected')) {
       const _url = $('div.ico.view-option-stack', html).parent().attr('href');
@@ -84,7 +83,6 @@ const getProductsList = async (_url) => {
     nextLink = nextLink.filter(link => {
       return !$('', link).hasClass('andes-pagination__button--disabled');
     });
-    //const nextUrl = nextLink.length != 0 ? $('a', nextLink.pop()).attr('href') : null;
     if (nextLink.length != 0) {
       list.push({
         description: `${url} next page`,
@@ -109,7 +107,9 @@ const getProductHtml = async (_url) => {
   const html = await dynamicHtml(url);
   const filename = `Product_${_url.id}.html`;
   storageUrl.uploadUrl(filename, html, (err) => {
-    if (err) {console.error(err);}
+    if (err) {
+      console.error(err);
+    }
   });
 
   let list = [{
@@ -127,7 +127,9 @@ const getSellerHtml = async (_url) => {
   const html = await dynamicHtml(url);
   const filename = `Seller${_url.id}.html`;
   storageUrl.uploadUrl(filename, html, (err) => {
-    if (err) {console.error(err);}
+    if (err) {
+      console.error(err);
+    }
   });
 };
 
@@ -183,7 +185,6 @@ const attempt = async (period) => {
   const delay = parameters.period * 1000 / (parameters.attempts + 1);
   const list = await models.url.getNonChecked(parameters.attempts);
   let typeScrap = 0;
-  //process.exit(1);
 
   for (const url of list) {
     await waitDelay(delay);
