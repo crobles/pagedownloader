@@ -43,7 +43,7 @@ if (isProduction) {
 }
 const logLevels = [ 'error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly' ];
 
-if(process.env.NODE_ENV === 'test') {
+if (process.env.NODE_ENV === 'test') {
   module.exports = { log:logLevels.reduce((o, level) => {
     o[level] = msg => console.log(msg);
     return o;

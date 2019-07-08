@@ -92,8 +92,8 @@ const getAttempts = async () => {
 };
 
 const saveAttempts = async (message, typeScrap) => {
-   const queryResponse = await knex.table('logs').insert({message, typeScrap});
-   return queryResponse.rowCount;
+  const queryResponse = await knex.table('logs').insert({message, typeScrap});
+  return queryResponse.rowCount;
 };
 
 module.exports = {

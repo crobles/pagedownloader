@@ -1,8 +1,7 @@
 const rfr = require('rfr');
-const rp = require('request-promise');
-const fs = require('fs');
 const $ = require('cheerio');
 const models = rfr('db/models/models');
+const storageUrl = rfr('storage/url');
 const puppeteer = require('puppeteer');
 let browser = null;
 
@@ -109,8 +108,10 @@ const getProductHtml = async (_url) => {
   const description = _url.description;
   const html = await dynamicHtml(url);
   const filename = `Product_${_url.id}.html`;
-  fs.writeFile(`./docs/${filename}`, html, (err) => console.error(err));
-  
+  storageUrl.uploadUrl(filename, html, (err) => {
+    if (err) {console.error(err);}
+  });
+
   let list = [{
     description: `${description} Seller`,
     url: $('.reputation-view-more', html).attr('href'),
@@ -125,12 +126,13 @@ const getSellerHtml = async (_url) => {
   const url = _url.url;
   const html = await dynamicHtml(url);
   const filename = `Seller${_url.id}.html`;
-  fs.writeFile(`./docs/${filename}`, html, (err) => console.error(err));
-  
+  storageUrl.uploadUrl(filename, html, (err) => {
+    if (err) {console.error(err);}
+  });
 };
 
 const waitDelay = (t) => {
-  return new Promise((res, rej) => {
+  return new Promise((res) => {
     setTimeout(() => {
       res(true);
     }, t);
@@ -168,7 +170,7 @@ const fz = (n) => { //n-esima vez q corre
 };
 
 const attempt = async (period) => {
-  const m =await models.url.getAttempts();
+  const m = await models.url.getAttempts();
   console.log(m);
   const n = fz(Number(m[0].count));
   console.log(period, n);
@@ -206,7 +208,7 @@ const attempt = async (period) => {
   } catch (error) {
     console.log(error);
     await models.url.saveAttempts(error);
-  }  
+  }
 
   //TODO Recalculate next attempts per period
   process.exit(1);
@@ -214,5 +216,3 @@ const attempt = async (period) => {
 
 const period = process.argv[2];
 attempt(period);
-
-
