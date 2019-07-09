@@ -6,7 +6,6 @@ const puppeteer = require('puppeteer');
 require('log-timestamp');
 
 let browser = null;
-console.log('Ejecuta');
 
 const getUrlList = async (url, origin, category = null) => {
   try {
@@ -166,7 +165,7 @@ const dynamicHtml = async (url) => {
     await page.close();
     return html;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
