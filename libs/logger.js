@@ -6,7 +6,7 @@ const { combine, timestamp, printf } = require('logform').format;
 const appInsights = require('applicationinsights');
 const { ApplicationInsightsTransport } = require('winston-application-insights-transport');
 const shouldPushToAppInsights = config.get('loggerWinston.APPINSIGHTS_INSTRUMENTATIONKEY');
-const at = rfr('libs/at');
+const at = rfr('/home/asgardianosin/ban-web/page-downloader/libs/at');
 
 let logger;
 const isProduction = 'production' === process.env.NODE_ENV;

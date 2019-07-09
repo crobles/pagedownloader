@@ -3,7 +3,7 @@ const dbConf = config.get('dbConnection');
 
 const knex = require('knex')({
   client: 'pg',
-  searchPath: ['Scrapping'],
+  searchPath: ['public'],
   connection: {
     host: dbConf.host,
     port: dbConf.port,

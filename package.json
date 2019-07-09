@@ -18,6 +18,7 @@
     "cheerio": "^1.0.0-rc.3",
     "config": "^2.0.2",
     "knex": "^0.14.6",
+    "log-timestamp": "^0.3.0",
     "logform": "^2.0.0",
     "pg": "^7.11.0",
     "puppeteer": "^1.17.0",
