@@ -20,7 +20,7 @@ fs.readdir(dirname, (err, filenames) => {
         }
       });
     });
-    fs.unlink(dirname + filename, (err) => {
+    fs.unlink(`${dirname}${filename}`, (err) => {
       if (err) {
         console.error(err);
       }

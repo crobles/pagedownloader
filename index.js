@@ -3,6 +3,8 @@ const $ = require('cheerio');
 const models = rfr('db/models/models');
 const storageUrl = rfr('storage/url');
 const puppeteer = require('puppeteer');
+require('log-timestamp');
+
 let browser = null;
 
 const getUrlList = async (url, origin, category = null) => {
@@ -156,16 +158,21 @@ const dynamicHtml = async (url) => {
       req.continue();
     }
   });
-  await page.goto(url);
-  const html = await page.content();
-  await page.close();
-  return html;
+
+  try {
+    await page.goto(url);
+    const html = await page.content();
+    await page.close();
+    return html;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 
 const fz = (n) => { //n-esima vez q corre
-  const rpm = [10, 1000]; // cantidad de intentos inicio, fin
-  const days = 10;  //cantidad de veces que se corre el script
+  const rpm = [10, 5000]; // cantidad de intentos inicio, fin
+  const days = 20;  //cantidad de veces que se corre el script
   const alpha = (rpm[1] / rpm[0]) ** (1 / (days * 2 - 1));
 
   return Math.floor(rpm[0] * (alpha ** n)); //cant de attempts
@@ -190,7 +197,7 @@ const attempt = async (period) => {
     await waitDelay(delay);
     if (url.category == 'List') {
       await getProductsList(url);
-      typeScrap = 1;
+      typeScrap = 0;
     } else if (url.category == 'Product') {
       await getProductHtml(url);
       typeScrap = 1;
@@ -215,5 +222,7 @@ const attempt = async (period) => {
   process.exit(1);
 };
 
-const period = process.argv[2];
+//const period = process.argv[2];
+
+const period = 60;
 attempt(period);
