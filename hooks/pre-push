@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+const spawn = require('child_process').spawn;
+const exec = require('child_process').execSync;
+
+const testing = () => {
+  const testProc = spawn('npm', ['test'], {stdio: 'inherit'});
+  testProc.on('close', (code) => {
+    process.exit(code);
+  });
+};
+
+const checkBranch = () => {
+  const branchName = exec('git symbolic-ref HEAD').toString().trim();
+  const branchMatch = branchName.match(/.*\/.*\/(dev|master|feat-*|fix-*|junk-*)/);
+
+  if (!branchMatch) {
+    console.error('[Policy] pushed branch must starts with feat--, fix--, junk--, master or dev');
+    process.exit(1);
+  }
+};
+
+checkBranch();
+testing();

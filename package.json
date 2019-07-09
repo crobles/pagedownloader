@@ -1,0 +1,42 @@
+{
+  "name": "commercial-base",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test mocha test/**/*.js --exit --timeout 9990000",
+    "lintJs": "npx eslint --ignore-path .gitignore ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "url git"
+  },
+  "author": "comercial-team",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/storage": "^3.0.2",
+    "cheerio": "^1.0.0-rc.3",
+    "config": "^2.0.2",
+    "knex": "^0.14.6",
+    "logform": "^2.0.0",
+    "pg": "^7.11.0",
+    "puppeteer": "^1.17.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "rfr": "^1.2.3",
+    "tcomb": "^3.2.27",
+    "url-join": "^4.0.0",
+    "winston": "^3.0.0-rc1",
+    "winston-application-insights-transport": "0.0.1",
+    "winston-azure-application-insights": "^2.0.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^5.8.0",
+    "faker": "^4.1.0",
+    "half-faked": "^1.0.0",
+    "mocha": "^5.2.0",
+    "shared-git-hooks": "^1.2.1"
+  }
+}
