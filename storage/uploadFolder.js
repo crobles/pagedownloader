@@ -17,14 +17,17 @@ fs.readdir(dirname, (err, filenames) => {
       storageUrl.uploadUrl(filename, content, (err) => {
         if (err) {
           console.error(err);
+        } else {
+          console.log(`archivo subido ${filename}`);
         }
+        fs.unlink(`${dirname}${filename}`, (err) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log(`archivo borrado ${filename}`);
+          }
+        });
       });
     });
-    fs.unlink(`${dirname}${filename}`, (err) => {
-      if (err) {
-        console.error(err);
-      }
-    });
   });
-  console.log('Carga de archivos finalizada');
 });

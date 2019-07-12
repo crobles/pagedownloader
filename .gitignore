@@ -7,3 +7,5 @@ config/local*
 
 .vscode/*
 docs/*
+
+certs/*
