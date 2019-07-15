@@ -61,7 +61,6 @@ const getNonChecked = async (limit = 100) => {
   const queryResponse = await knex.table(table)
     .where({ 'checked': false }).limit(limit)
     .select();
-  console.log(queryResponse);
   return queryResponse;
 };
 
