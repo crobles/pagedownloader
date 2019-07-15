@@ -4,7 +4,7 @@ const bucketName = 'mm-input-store';
 const bucket = st.storage.bucket(bucketName);
 
 const uploadUrl = (filename, urlData, callback) => {
-  let folderFile = `input-test/${filename}`;
+  let folderFile = `input/${filename}`;
   let file = bucket.file(folderFile);
   let stream = file.createWriteStream();
   stream.on('error', callback);
