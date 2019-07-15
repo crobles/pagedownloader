@@ -58,14 +58,15 @@ const saveOrderList  =  async (orderList) => {
 };
 
 const getNonChecked = async (limit = 100) => {
-  const queryResponse = knex.table(table)
+  const queryResponse = await knex.table(table)
     .where({ 'checked': false }).limit(limit)
     .select();
+  console.log(queryResponse);
   return queryResponse;
 };
 
 const getNonCheckedCategory = async (category) => {
-  const queryResponse = knex.table(table)
+  const queryResponse = await knex.table(table)
     .where({ 'checked': false, category: category })
     .select();
   return queryResponse;
