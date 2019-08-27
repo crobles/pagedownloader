@@ -180,10 +180,7 @@ const fz = (n) => { //n-esima vez q corre
 
 const attempt = async (period) => {
   const m = await models.url.getAttempts();
-  console.log(m);
   const n = fz(Number(m[0].count));
-  console.log(period, n);
-  //main
   //TODO Get parameters from DB
   const parameters = {
     attempts: n,
