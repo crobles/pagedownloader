@@ -18,7 +18,7 @@ const getUrlList = async (url, origin, category = null) => {
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
       const conditions = $('', html).find('#id_condition a.qcat-truncate ').toArray().filter(tag => {
-        return $('', tag).attr('title').toLowerCase() == 'Nuevo'.toLowerCase();
+        return $('', tag).attr('title').toLowerCase() === 'Nuevo'.toLowerCase();
       });
       if (conditions > 0) {
         const _url = $(conditions[0], '').attr('href');
@@ -63,7 +63,7 @@ const getProductsList = async (_url) => {
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
       const conditions = $('', html).find('#id_condition a.qcat-truncate').toArray().filter(tag => {
-        return $('', tag).attr('title').toLowerCase() == 'Nuevo'.toLowerCase();
+        return $('', tag).attr('title').toLowerCase() === 'Nuevo'.toLowerCase();
       });
       if (conditions > 0) {
         const _url = $(conditions[0], '').attr('href');
@@ -103,7 +103,6 @@ const getProductsList = async (_url) => {
 };
 
 const getProductHtml = async (_url) => {
-
   const url = _url.url;
   const description = _url.description;
   const html = await dynamicHtml(url);
@@ -144,15 +143,15 @@ const waitDelay = (t) => {
 };
 
 const dynamicHtml = async (url) => {
-  if (browser == null) {
-    browser = await puppeteer.launch({ headless: true });
+  if (browser === null) {
+    browser = await puppeteer.launch({ headless: true });//cabeceras
   }
   let page = await browser.newPage();
   await page.setViewport({ width: 1920, height: 1080 });
   await page.setRequestInterception(true);
 
   page.on('request', (req) => {
-    if (req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image') {
+    if (req.resourceType() === 'stylesheet' || req.resourceType() === 'font' || req.resourceType() === 'image') {
       req.abort();
     } else {
       req.continue();
@@ -192,13 +191,13 @@ const attempt = async (period) => {
 
   for (const url of list) {
     await waitDelay(delay);
-    if (url.category == 'List') {
+    if (url.category === 'List') {
       await getProductsList(url);
       typeScrap = 0;
-    } else if (url.category == 'Product') {
+    } else if (url.category === 'Product') {
       await getProductHtml(url);
       typeScrap = 1;
-    } else if (url.category == 'Seller') {
+    } else if (url.category === 'Seller') {
       await getSellerHtml(url);
       typeScrap = 1;
     } else {
