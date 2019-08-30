@@ -138,18 +138,13 @@ const getSellerHtml = async (_url) => {
 const dynamicHtml = async (url) => {
 
   if (browser === null) {
-    const options = {
-      headless: true,
-      ignoreHTTPSErrors: true,
-      userDataDir: './tmp'
-    };
-    browser = await puppeteer.launch(options);
+    browser = await puppeteer.launch();
   }
 
-  let page = await browser.newPage();
-  let WH = await headerConf.resolution();
-  await page.setViewport(WH);
-  let agent = await headerConf.userAgent();
+  const page = await browser.newPage();
+  const wh = await headerConf.resolution();
+  await page.setViewport(wh);
+  const agent = await headerConf.userAgent();
   await page.setUserAgent(agent);
   await page.setRequestInterception(true);
 
