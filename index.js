@@ -3,6 +3,7 @@ const $ = require('cheerio');
 const models = rfr('db/models/models');
 const storageUrl = rfr('storage/url');
 const puppeteer = require('puppeteer');
+const headerConf = rfr('libs/headerConf');
 require('log-timestamp');
 
 let browser = null;
@@ -58,7 +59,7 @@ const getProductsList = async (_url) => {
     const html = await dynamicHtml(url);
     if (!$('div.ico.view-option-stack', html).hasClass('selected')) {
       const _url = $('div.ico.view-option-stack', html).parent().attr('href');
-      console.log(`Trying to get list view with url: ${_url}`);
+      console.log(`Trying to get list view with url ->>>>>: ${_url}`);
       return getUrlList(_url, origin, category);
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
@@ -94,7 +95,7 @@ const getProductsList = async (_url) => {
       });
     }
     console.log(list.length);
-    await models.url.saveList(list);
+    await models.url.saveList(list);//guarda los productos rescatados de la lista
     return { list };
   } catch (error) {
     console.log(error);
@@ -102,7 +103,7 @@ const getProductsList = async (_url) => {
   }
 };
 
-const getProductHtml = async (_url) => {
+const getProductHtml = async (_url) => {//subida archivo a GCP
   const url = _url.url;
   const description = _url.description;
   const html = await dynamicHtml(url);
@@ -134,20 +135,32 @@ const getSellerHtml = async (_url) => {
   });
 };
 
-const waitDelay = (t) => {
+/*const waitDelay = (t) => {
   return new Promise((res) => {
     setTimeout(() => {
       res(true);
     }, t);
   });
-};
+};*/
 
-const dynamicHtml = async (url) => {
+
+
+const dynamicHtml = async (url) => {//headers
+
   if (browser === null) {
-    browser = await puppeteer.launch({ headless: true });//cabeceras
+    const options = {
+      headless: true,
+      ignoreHTTPSErrors: true,
+      userDataDir: './tmp'
+    };
+    browser = await puppeteer.launch(options);
   }
+
   let page = await browser.newPage();
-  await page.setViewport({ width: 1920, height: 1080 });
+  let WH = await headerConf.resolution();
+  await page.setViewport(WH);
+  let agent = await headerConf.userAgent();
+  await page.setUserAgent(agent);
   await page.setRequestInterception(true);
 
   page.on('request', (req) => {
@@ -159,6 +172,8 @@ const dynamicHtml = async (url) => {
   });
 
   try {
+    const delay = await headerConf.randomGet();
+    await page.waitFor(delay);
     await page.goto(url);
     const html = await page.content();
     await page.close();
@@ -173,24 +188,23 @@ const fz = (n) => { //n-esima vez q corre
   const rpm = [10, 5000]; // cantidad de intentos inicio, fin
   const days = 20;  //cantidad de veces que se corre el script
   const alpha = (rpm[1] / rpm[0]) ** (1 / (days * 2 - 1));
-
   return Math.floor(rpm[0] * (alpha ** n)); //cant de attempts
 };
 
 const attempt = async (period) => {
   const m = await models.url.getAttempts();
   const n = fz(Number(m[0].count));
-  //TODO Get parameters from DB
+
   const parameters = {
     attempts: n,
     period: period
   };
-  const delay = parameters.period * 1000 / (parameters.attempts + 1);
+  //const delay = await randomGet(); //parameters.period * 1000 / (parameters.attempts + 1);
   const list = await models.url.getNonChecked(parameters.attempts);
   let typeScrap = 0;
 
   for (const url of list) {
-    await waitDelay(delay);
+    //await waitDelay(delay);
     if (url.category === 'List') {
       await getProductsList(url);
       typeScrap = 0;
