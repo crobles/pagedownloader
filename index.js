@@ -95,7 +95,7 @@ const getProductsList = async (_url) => {
       });
     }
     console.log(list.length);
-    await models.url.saveList(list);//guarda los productos rescatados de la lista
+    await models.url.saveList(list);
     return { list };
   } catch (error) {
     console.log(error);
@@ -103,7 +103,7 @@ const getProductsList = async (_url) => {
   }
 };
 
-const getProductHtml = async (_url) => {//subida archivo a GCP
+const getProductHtml = async (_url) => {
   const url = _url.url;
   const description = _url.description;
   const html = await dynamicHtml(url);
@@ -135,17 +135,7 @@ const getSellerHtml = async (_url) => {
   });
 };
 
-/*const waitDelay = (t) => {
-  return new Promise((res) => {
-    setTimeout(() => {
-      res(true);
-    }, t);
-  });
-};*/
-
-
-
-const dynamicHtml = async (url) => {//headers
+const dynamicHtml = async (url) => {
 
   if (browser === null) {
     const options = {
@@ -184,11 +174,11 @@ const dynamicHtml = async (url) => {//headers
 };
 
 
-const fz = (n) => { //n-esima vez q corre
-  const rpm = [10, 5000]; // cantidad de intentos inicio, fin
-  const days = 20;  //cantidad de veces que se corre el script
+const fz = (n) => {
+  const rpm = [10, 5000];
+  const days = 20;
   const alpha = (rpm[1] / rpm[0]) ** (1 / (days * 2 - 1));
-  return Math.floor(rpm[0] * (alpha ** n)); //cant de attempts
+  return Math.floor(rpm[0] * (alpha ** n));
 };
 
 const attempt = async (period) => {
@@ -199,12 +189,11 @@ const attempt = async (period) => {
     attempts: n,
     period: period
   };
-  //const delay = await randomGet(); //parameters.period * 1000 / (parameters.attempts + 1);
+
   const list = await models.url.getNonChecked(parameters.attempts);
   let typeScrap = 0;
 
   for (const url of list) {
-    //await waitDelay(delay);
     if (url.category === 'List') {
       await getProductsList(url);
       typeScrap = 0;
