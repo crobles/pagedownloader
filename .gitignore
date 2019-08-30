@@ -9,3 +9,5 @@ config/local*
 docs/*
 
 certs/*
+
+tmp/*

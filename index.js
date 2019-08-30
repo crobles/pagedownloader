@@ -3,6 +3,7 @@ const $ = require('cheerio');
 const models = rfr('db/models/models');
 const storageUrl = rfr('storage/url');
 const puppeteer = require('puppeteer');
+const headerConf = rfr('libs/headerConf');
 require('log-timestamp');
 
 let browser = null;
@@ -18,7 +19,7 @@ const getUrlList = async (url, origin, category = null) => {
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
       const conditions = $('', html).find('#id_condition a.qcat-truncate ').toArray().filter(tag => {
-        return $('', tag).attr('title').toLowerCase() == 'Nuevo'.toLowerCase();
+        return $('', tag).attr('title').toLowerCase() === 'Nuevo'.toLowerCase();
       });
       if (conditions > 0) {
         const _url = $(conditions[0], '').attr('href');
@@ -58,12 +59,12 @@ const getProductsList = async (_url) => {
     const html = await dynamicHtml(url);
     if (!$('div.ico.view-option-stack', html).hasClass('selected')) {
       const _url = $('div.ico.view-option-stack', html).parent().attr('href');
-      console.log(`Trying to get list view with url: ${_url}`);
+      console.log(`Trying to get list view with url ->>>>>: ${_url}`);
       return getUrlList(_url, origin, category);
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
       const conditions = $('', html).find('#id_condition a.qcat-truncate').toArray().filter(tag => {
-        return $('', tag).attr('title').toLowerCase() == 'Nuevo'.toLowerCase();
+        return $('', tag).attr('title').toLowerCase() === 'Nuevo'.toLowerCase();
       });
       if (conditions > 0) {
         const _url = $(conditions[0], '').attr('href');
@@ -103,7 +104,6 @@ const getProductsList = async (_url) => {
 };
 
 const getProductHtml = async (_url) => {
-
   const url = _url.url;
   const description = _url.description;
   const html = await dynamicHtml(url);
@@ -135,24 +135,21 @@ const getSellerHtml = async (_url) => {
   });
 };
 
-const waitDelay = (t) => {
-  return new Promise((res) => {
-    setTimeout(() => {
-      res(true);
-    }, t);
-  });
-};
-
 const dynamicHtml = async (url) => {
-  if (browser == null) {
-    browser = await puppeteer.launch({ headless: true });
+
+  if (browser === null) {
+    browser = await puppeteer.launch();
   }
-  let page = await browser.newPage();
-  await page.setViewport({ width: 1920, height: 1080 });
+
+  const page = await browser.newPage();
+  const wh = await headerConf.resolution();
+  await page.setViewport(wh);
+  const agent = await headerConf.userAgent();
+  await page.setUserAgent(agent);
   await page.setRequestInterception(true);
 
   page.on('request', (req) => {
-    if (req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image') {
+    if (req.resourceType() === 'stylesheet' || req.resourceType() === 'font' || req.resourceType() === 'image') {
       req.abort();
     } else {
       req.continue();
@@ -160,6 +157,8 @@ const dynamicHtml = async (url) => {
   });
 
   try {
+    const delay = await headerConf.randomGet();
+    await page.waitFor(delay);
     await page.goto(url);
     const html = await page.content();
     await page.close();
@@ -170,38 +169,33 @@ const dynamicHtml = async (url) => {
 };
 
 
-const fz = (n) => { //n-esima vez q corre
-  const rpm = [10, 5000]; // cantidad de intentos inicio, fin
-  const days = 20;  //cantidad de veces que se corre el script
+const fz = (n) => {
+  const rpm = [10, 5000];
+  const days = 20;
   const alpha = (rpm[1] / rpm[0]) ** (1 / (days * 2 - 1));
-
-  return Math.floor(rpm[0] * (alpha ** n)); //cant de attempts
+  return Math.floor(rpm[0] * (alpha ** n));
 };
 
 const attempt = async (period) => {
   const m = await models.url.getAttempts();
-  console.log(m);
   const n = fz(Number(m[0].count));
-  console.log(period, n);
-  //main
-  //TODO Get parameters from DB
+
   const parameters = {
     attempts: n,
     period: period
   };
-  const delay = parameters.period * 1000 / (parameters.attempts + 1);
+
   const list = await models.url.getNonChecked(parameters.attempts);
   let typeScrap = 0;
 
   for (const url of list) {
-    await waitDelay(delay);
-    if (url.category == 'List') {
+    if (url.category === 'List') {
       await getProductsList(url);
       typeScrap = 0;
-    } else if (url.category == 'Product') {
+    } else if (url.category === 'Product') {
       await getProductHtml(url);
       typeScrap = 1;
-    } else if (url.category == 'Seller') {
+    } else if (url.category === 'Seller') {
       await getSellerHtml(url);
       typeScrap = 1;
     } else {
