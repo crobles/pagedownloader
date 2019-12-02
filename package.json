@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test mocha test/**/*.js --exit --timeout 9990000",
+    "start": "NODE_ENV=prod node index.js",
+    "test": "NODE_ENV=test node index.js",
     "lintJs": "npx eslint --ignore-path .gitignore ."
   },
   "repository": {

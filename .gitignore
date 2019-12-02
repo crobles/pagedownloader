@@ -3,6 +3,7 @@ package-lock.json
 
 # Confidential information for configuration
 config/local*
+config/test*
 !config/local*.example.*
 
 .vscode/*
