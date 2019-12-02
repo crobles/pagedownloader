@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "start": "NODE_ENV=prod node index.js",
-    "test": "NODE_ENV=test node index.js",
     "lintJs": "npx eslint --ignore-path .gitignore ."
   },
   "repository": {
