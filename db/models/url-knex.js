@@ -2,6 +2,10 @@ const rfr = require('rfr');
 const knex = rfr('db/knex');
 const table = 'urllist';
 
+const SCHEMA_BFF = 'mm_bff';
+
+const STATUS_PENDING = 'PENDING';
+
 const read = async () => {
   return await knex.table(table).select();
 };
@@ -57,7 +61,11 @@ const saveOrderList  =  async (orderList) => {
   }
 };
 
-const getNonChecked = async (limit = 100) => {
+const getNonChecked = async (limit = 100, category_id = null) => {
+  let params = {'checked': false};
+  if (category_id) {
+    params.marketplace_category_id = category_id;
+  }
   const queryResponse = await knex.table(table)
     .where({ 'checked': false }).limit(limit)
     .select();
@@ -68,6 +76,31 @@ const getNonCheckedCategory = async (category) => {
   const queryResponse = await knex.table(table)
     .where({ 'checked': false, category: category })
     .select();
+  return queryResponse;
+};
+
+const getPendingLists = async () => {
+  const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
+    .where({ status: STATUS_PENDING, is_blocked: false })
+    .whereNot({ parent_id: 0 })
+    .orderBy('priority', 'asc')
+    .select();
+  return queryResponse;
+};
+
+const getNotPendingLists = async () => {
+  const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
+    .where({ is_blocked: false })
+    .whereNot({status: STATUS_PENDING, parent_id: 0})
+    .orderBy('priority', 'asc')
+    .select();
+  return queryResponse;
+};
+
+const setCategoryStatus = async (categoryId, status) => {
+  const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
+    .where({ id: categoryId })
+    .update({ 'status': status });
   return queryResponse;
 };
 
@@ -105,5 +138,8 @@ module.exports = {
   remove,
   getNonCheckedCategory,
   getAttempts,
-  saveAttempts
+  saveAttempts,
+  getPendingLists,
+  getNotPendingLists,
+  setCategoryStatus
 };

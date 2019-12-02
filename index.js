@@ -12,12 +12,13 @@ const getUrlList = async (url, origin, category = null) => {
   try {
     let list = [];
     const html = await dynamicHtml(url);
+
     if (!$('div.ico.view-option-stack', html).hasClass('selected')) {
       const _url = $('div.ico.view-option-stack', html).parent().attr('href');
-      console.log(`Trying to get list view with url: ${_url}`);
+      console.log(`Url List: Trying to get list view with url: ${_url}`);
       return getUrlList(_url, origin, category);
     }
-    if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
+    if ($('', html).find('#id_condition a.qcat-truncate').length > 0) {
       const conditions = $('', html).find('#id_condition a.qcat-truncate ').toArray().filter(tag => {
         return $('', tag).attr('title').toLowerCase() === 'Nuevo'.toLowerCase();
       });
@@ -42,7 +43,6 @@ const getUrlList = async (url, origin, category = null) => {
       return !$('', link).hasClass('andes-pagination__button--disabled');
     });
     const nextUrl = nextLink.length != 0 ? $('a', nextLink.pop()).attr('href') : null;
-    console.log(list.length, nextUrl);
     return { list, nextUrl };
   } catch (error) {
     console.log(error);
@@ -50,16 +50,22 @@ const getUrlList = async (url, origin, category = null) => {
   }
 };
 
-const getProductsList = async (_url) => {
+const getProductsList = async (_url, _category_id) => {
   const url = _url.url;
   const origin = _url.origin;
   const category = 'Product';
+  if (!url) {
+    return {list: []};
+  }
   try {
     let list = [];
     const html = await dynamicHtml(url);
     if (!$('div.ico.view-option-stack', html).hasClass('selected')) {
       const _url = $('div.ico.view-option-stack', html).parent().attr('href');
-      console.log(`Trying to get list view with url ->>>>>: ${_url}`);
+      if (!_url) {
+        return {list: []};
+      }
+      console.log(`Product List: Trying to get list view with url ->>>>>: ${_url}`);
       return getUrlList(_url, origin, category);
     }
     if ($('', html).find('#id_condition a.qcat-truncate ').length > 0) {
@@ -79,7 +85,8 @@ const getProductsList = async (_url) => {
           description: $('a', item).text(),
           url: $('a', item).attr('href'),
           origin,
-          category
+          category,
+          marketplace_category_id: _category_id
         });
     }
     let nextLink = $('li.andes-pagination__button.andes-pagination__button--next', html).toArray();
@@ -91,10 +98,10 @@ const getProductsList = async (_url) => {
         description: `${url} next page`,
         url: $('a', nextLink.pop()).attr('href'),
         origin,
-        category: 'List'
+        category: 'List',
+        marketplace_category_id: _category_id
       });
     }
-    console.log(list.length);
     await models.url.saveList(list);
     return { list };
   } catch (error) {
@@ -138,7 +145,7 @@ const getSellerHtml = async (_url) => {
 const dynamicHtml = async (url) => {
 
   if (browser === null) {
-    browser = await puppeteer.launch();
+    browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
   }
 
   const page = await browser.newPage();
@@ -184,25 +191,55 @@ const attempt = async (period) => {
     attempts: n,
     period: period
   };
-
-  const list = await models.url.getNonChecked(parameters.attempts);
   let typeScrap = 0;
 
-  for (const url of list) {
-    if (url.category === 'List') {
-      await getProductsList(url);
-      typeScrap = 0;
-    } else if (url.category === 'Product') {
-      await getProductHtml(url);
-      typeScrap = 1;
-    } else if (url.category === 'Seller') {
-      await getSellerHtml(url);
-      typeScrap = 1;
-    } else {
-      console.error(`${url.category} is not a known reading method`);
-      typeScrap = 0;
+  const prioritizedCategories = await models.url.getPendingLists();
+
+  if (prioritizedCategories && prioritizedCategories.length > 0) {
+    await asyncForEach(prioritizedCategories, async (category) => {
+      if (category.url) {
+        category.origin = 'Manual';
+        try {
+          await models.url.setCategoryStatus(category.id, 'PROCESSING');
+          await getProductsList(category, category.id);
+          const list = await models.url.getNonChecked(parameters.attempts, category.id);
+          for (const url of list) {
+            if (url.category === 'Product') {
+              await getProductHtml(url);
+              typeScrap = 1;
+            } else if (url.category === 'Seller') {
+              await getSellerHtml(url);
+              typeScrap = 1;
+            } else {
+              console.error(`${url.category} is not a known reading method`);
+              typeScrap = 0;
+            }
+            await models.url.urlChecked(url.id);
+          }
+          await models.url.setCategoryStatus(category.id, 'FINISHED');
+        } catch (e) {
+          await models.url.setCategoryStatus(category.id, 'FINISHED');
+        }
+      }
+    });
+  } else {
+    const list = await models.url.getNonChecked(parameters.attempts);
+    for (const url of list) {
+      if (url.category === 'List') {
+        await getProductsList(url);
+        typeScrap = 0;
+      } else if (url.category === 'Product') {
+        await getProductHtml(url);
+        typeScrap = 1;
+      } else if (url.category === 'Seller') {
+        await getSellerHtml(url);
+        typeScrap = 1;
+      } else {
+        console.error(`${url.category} is not a known reading method`);
+        typeScrap = 0;
+      }
+      await models.url.urlChecked(url.id);
     }
-    await models.url.urlChecked(url.id);
   }
 
   try {
@@ -216,7 +253,12 @@ const attempt = async (period) => {
   process.exit(1);
 };
 
-//const period = process.argv[2];
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
+  }
+}
 
 const period = 60;
+console.log('Attempt');
 attempt(period);

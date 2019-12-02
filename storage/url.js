@@ -6,6 +6,10 @@ const gcpConf = config.get('gcp');
 const bucket = st.storage.bucket(bucketName);
 
 const uploadUrl = (filename, urlData, callback) => {
+  if (process.env.NODE_ENV === 'test') {
+    setTimeout(() => console.log('Fake Upload Url'), 500);
+    return;
+  }
   let folderFile = `${gcpConf.bucketFolder}/${filename}`;
   let file = bucket.file(folderFile);
   let stream = file.createWriteStream();
