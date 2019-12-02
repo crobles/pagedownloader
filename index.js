@@ -43,7 +43,6 @@ const getUrlList = async (url, origin, category = null) => {
       return !$('', link).hasClass('andes-pagination__button--disabled');
     });
     const nextUrl = nextLink.length != 0 ? $('a', nextLink.pop()).attr('href') : null;
-    console.log(list.length, nextUrl);
     return { list, nextUrl };
   } catch (error) {
     console.log(error);
@@ -103,7 +102,6 @@ const getProductsList = async (_url, _category_id) => {
         marketplace_category_id: _category_id
       });
     }
-    console.log(list.length);
     await models.url.saveList(list);
     return { list };
   } catch (error) {
@@ -197,8 +195,6 @@ const attempt = async (period) => {
 
   const prioritizedCategories = await models.url.getPendingLists();
 
-  console.log('Prioritized Categories', prioritizedCategories.length);
-  // process.exit(1);
   if (prioritizedCategories && prioritizedCategories.length > 0) {
     await asyncForEach(prioritizedCategories, async (category) => {
       if (category.url) {
@@ -262,9 +258,6 @@ async function asyncForEach(array, callback) {
     await callback(array[index], index, array);
   }
 }
-
-
-//const period = process.argv[2];
 
 const period = 60;
 console.log('Attempt');
