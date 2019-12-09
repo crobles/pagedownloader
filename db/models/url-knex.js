@@ -61,13 +61,16 @@ const saveOrderList = async (orderList) => {
   }
 };
 
-const getNonChecked = async (limit = 100, category_id = null) => {
+const getNonChecked = async (limit = 100, category_id = null, sellerId = null) => {
   let params = {'checked': false};
   if (category_id) {
     params.marketplace_category_id = category_id;
   }
+  if (sellerId) {
+    params.seller_id = sellerId;
+  }
   const queryResponse = await knex.table(table)
-    .where({'checked': false}).limit(limit)
+    .where(params).limit(limit)
     .select();
   return queryResponse;
 };

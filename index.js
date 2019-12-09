@@ -59,6 +59,7 @@ const getProductsList = async (_url, _category_id) => {
   const url = _url.url;
   const origin = _url.origin;
   const category = 'Product';
+  const sellerId = _url.sellerId;
   if (!url) {
     return {list: []};
   }
@@ -92,6 +93,7 @@ const getProductsList = async (_url, _category_id) => {
           origin,
           category,
           marketplace_category_id: _category_id,
+          'seller_id': sellerId,
         });
     }
     let nextLink = $('li.andes-pagination__button.andes-pagination__button--next', html).toArray();
@@ -105,6 +107,7 @@ const getProductsList = async (_url, _category_id) => {
         origin,
         category: 'List',
         marketplace_category_id: _category_id,
+        'seller_id': sellerId,
       });
     }
     await models.url.saveList(list);
@@ -203,6 +206,7 @@ const attempt = async (period) => {
   let typeScrap = 0;
 
   const prioritizedSeller = await models.url.getPrioritySellers();
+  const prioritizedCategories = await models.url.getPendingLists();
   if (prioritizedSeller) {
     try {
       await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_RUNNING);
@@ -215,21 +219,31 @@ const attempt = async (period) => {
           url: nextUrl || urlProductsSeller,
           category: 'List',
           origin: 'Manual',
-          id: prioritizedSeller.id,
+          sellerId: prioritizedSeller.id,
         });
-        existNextUrl = !!(products.nextUrl || products.list[products.list.length - 1].category === 'List');
-        if (existNextUrl) {
-          nextUrl = products.nextUrl || products.list[products.list.length - 1].url;
+        if (products.list.length > 0) {
+          existNextUrl = !!(products.nextUrl || products.list[products.list.length - 1].category === 'List');
+          if (existNextUrl) {
+            nextUrl = products.nextUrl || products.list[products.list.length - 1].url;
+          }
+          const productsSellerDataBase = await models.url.getNonChecked(products.list.length, null, prioritizedSeller.id);
+          for (const productSeller of productsSellerDataBase) {
+            if (productSeller.category === 'Product') {
+              await getProductHtml(productSeller);
+              typeScrap = 1;
+            } else {
+              console.error(`${productSeller.category} is not a known reading method`);
+              typeScrap = 0;
+            }
+            await models.url.urlChecked(productSeller.id);
+          }
         }
       }
       await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_FINISHED, 0);
     } catch (e) {
       console.error(e);
     }
-  }
-
-  const prioritizedCategories = await models.url.getPendingLists();
-  if (prioritizedCategories && prioritizedCategories.length > 0) {
+  } else if (prioritizedCategories && prioritizedCategories.length > 0) {
     await asyncForEach(prioritizedCategories, async (category) => {
       if (category.url) {
         category.origin = 'Manual';
