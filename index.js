@@ -7,6 +7,11 @@ const headerConf = rfr('libs/headerConf');
 require('log-timestamp');
 
 let browser = null;
+const STATUS_RUNNING = 'Running';
+/*const STATUS_WAITING = 'Waiting';
+const STATUS_STOPPED = 'Stopped';*/
+const STATUS_FINISHED = 'Finished';
+
 
 const getUrlList = async (url, origin, category = null) => {
   try {
@@ -35,7 +40,7 @@ const getUrlList = async (url, origin, category = null) => {
           description: $('a', item).text(),
           url: $('a', item).attr('href'),
           origin,
-          category
+          category,
         });
     }
     let nextLink = $('li.andes-pagination__button.andes-pagination__button--next', html).toArray();
@@ -43,10 +48,10 @@ const getUrlList = async (url, origin, category = null) => {
       return !$('', link).hasClass('andes-pagination__button--disabled');
     });
     const nextUrl = nextLink.length != 0 ? $('a', nextLink.pop()).attr('href') : null;
-    return { list, nextUrl };
+    return {list, nextUrl};
   } catch (error) {
     console.log(error);
-    return { list: [], nextUrl: null };
+    return {list: [], nextUrl: null};
   }
 };
 
@@ -54,6 +59,7 @@ const getProductsList = async (_url, _category_id) => {
   const url = _url.url;
   const origin = _url.origin;
   const category = 'Product';
+  const sellerId = _url.sellerId;
   if (!url) {
     return {list: []};
   }
@@ -86,7 +92,8 @@ const getProductsList = async (_url, _category_id) => {
           url: $('a', item).attr('href'),
           origin,
           category,
-          marketplace_category_id: _category_id
+          marketplace_category_id: _category_id,
+          'seller_id': sellerId,
         });
     }
     let nextLink = $('li.andes-pagination__button.andes-pagination__button--next', html).toArray();
@@ -99,14 +106,15 @@ const getProductsList = async (_url, _category_id) => {
         url: $('a', nextLink.pop()).attr('href'),
         origin,
         category: 'List',
-        marketplace_category_id: _category_id
+        marketplace_category_id: _category_id,
+        'seller_id': sellerId,
       });
     }
     await models.url.saveList(list);
-    return { list };
+    return {list};
   } catch (error) {
     console.log(error);
-    return { list: [] };
+    return {list: []};
   }
 };
 
@@ -125,21 +133,26 @@ const getProductHtml = async (_url) => {
     description: `${description} Seller`,
     url: $('.reputation-view-more', html).attr('href'),
     origin: 'PDP',
-    category: 'Seller'
+    category: 'Seller',
   }];
   await models.url.saveList(list);
   //TODO Save on a Relational Table to track file against product description
 };
 
-const getSellerHtml = async (_url) => {
+const getSellerHtml = async (_url, callBack = false) => {
   const url = _url.url;
   const html = await dynamicHtml(url);
-  const filename = `Seller${_url.id}.html`;
-  storageUrl.uploadUrl(filename, html, (err) => {
-    if (err) {
-      console.error(err);
-    }
-  });
+  if (!callBack) {
+    const filename = `Seller${_url.id}.html`;
+    storageUrl.uploadUrl(filename, html, (err) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+  } else {
+    return html;
+  }
+
 };
 
 const dynamicHtml = async (url) => {
@@ -175,7 +188,6 @@ const dynamicHtml = async (url) => {
   }
 };
 
-
 const fz = (n) => {
   const rpm = [10, 5000];
   const days = 20;
@@ -189,13 +201,49 @@ const attempt = async (period) => {
 
   const parameters = {
     attempts: n,
-    period: period
+    period: period,
   };
   let typeScrap = 0;
 
+  const prioritizedSeller = await models.url.getPrioritySellers();
   const prioritizedCategories = await models.url.getPendingLists();
-
-  if (prioritizedCategories && prioritizedCategories.length > 0) {
+  if (prioritizedSeller) {
+    try {
+      await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_RUNNING);
+      const sellerHrml = await getSellerHtml({url: prioritizedSeller.url}, true);
+      const urlProductsSeller = $('.publications__subtitle', sellerHrml)[0].attribs.href;
+      let existNextUrl = true;
+      let nextUrl = null;
+      while (existNextUrl) {
+        const products = await getProductsList({
+          url: nextUrl || urlProductsSeller,
+          category: 'List',
+          origin: 'Manual',
+          sellerId: prioritizedSeller.id,
+        });
+        if (products.list.length > 0) {
+          existNextUrl = !!(products.nextUrl || products.list[products.list.length - 1].category === 'List');
+          if (existNextUrl) {
+            nextUrl = products.nextUrl || products.list[products.list.length - 1].url;
+          }
+          const productsSellerDataBase = await models.url.getNonChecked(products.list.length, null, prioritizedSeller.id);
+          for (const productSeller of productsSellerDataBase) {
+            if (productSeller.category === 'Product') {
+              await getProductHtml(productSeller);
+              typeScrap = 1;
+            } else {
+              console.error(`${productSeller.category} is not a known reading method`);
+              typeScrap = 0;
+            }
+            await models.url.urlChecked(productSeller.id);
+          }
+        }
+      }
+      await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_FINISHED, 0);
+    } catch (e) {
+      console.error(e);
+    }
+  } else if (prioritizedCategories && prioritizedCategories.length > 0) {
     await asyncForEach(prioritizedCategories, async (category) => {
       if (category.url) {
         category.origin = 'Manual';

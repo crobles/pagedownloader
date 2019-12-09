@@ -13,14 +13,14 @@ const read = async () => {
 const saveOne = async (url) => {
   try {
     if (url['origin'].length == 0) {
-      return { success: false, error : 'No origin specified'};
+      return {success: false, error: 'No origin specified'};
     } else if (url['url'].length == 0) {
-      return { success: false, error : 'No Url specified'};
+      return {success: false, error: 'No Url specified'};
     }
     const insertResp = await knex.table(table).insert(url);
-    return { success: insertResp.rowCount > 0 };
+    return {success: insertResp.rowCount > 0};
   } catch (error) {
-    return { success: false, error : error.code || error.message};
+    return {success: false, error: error.code || error.message};
   }
 };
 
@@ -38,14 +38,14 @@ const saveList = async (list) => {
       return true;
     });
     let query = knex().table(table).insert(_list).toString();
-    let insertResp = await knex.raw( `${query}  on conflict do nothing` );
-    return { success: insertResp.rowCount > 0, error: errors.join('. ') };
+    let insertResp = await knex.raw(`${query}  on conflict do nothing`);
+    return {success: insertResp.rowCount > 0, error: errors.join('. ')};
   } catch (error) {
-    return { success: false, error : error.code || error.message};
+    return {success: false, error: error.code || error.message};
   }
 };
 
-const saveOrderList  =  async (orderList) => {
+const saveOrderList = async (orderList) => {
   if (orderList.length > 0) {
     const newOrderList = orderList.map(order => {
       order.subOrders = JSON.stringify(order.subOrders);
@@ -61,28 +61,31 @@ const saveOrderList  =  async (orderList) => {
   }
 };
 
-const getNonChecked = async (limit = 100, category_id = null) => {
+const getNonChecked = async (limit = 100, category_id = null, sellerId = null) => {
   let params = {'checked': false};
   if (category_id) {
     params.marketplace_category_id = category_id;
   }
+  if (sellerId) {
+    params.seller_id = sellerId;
+  }
   const queryResponse = await knex.table(table)
-    .where({ 'checked': false }).limit(limit)
+    .where(params).limit(limit)
     .select();
   return queryResponse;
 };
 
 const getNonCheckedCategory = async (category) => {
   const queryResponse = await knex.table(table)
-    .where({ 'checked': false, category: category })
+    .where({'checked': false, category: category})
     .select();
   return queryResponse;
 };
 
 const getPendingLists = async () => {
   const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
-    .where({ status: STATUS_PENDING, is_blocked: false })
-    .whereNot({ parent_id: 0 })
+    .where({status: STATUS_PENDING, is_blocked: false})
+    .whereNot({parent_id: 0})
     .orderBy('priority', 'asc')
     .select();
   return queryResponse;
@@ -90,7 +93,7 @@ const getPendingLists = async () => {
 
 const getNotPendingLists = async () => {
   const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
-    .where({ is_blocked: false })
+    .where({is_blocked: false})
     .whereNot({status: STATUS_PENDING, parent_id: 0})
     .orderBy('priority', 'asc')
     .select();
@@ -99,16 +102,16 @@ const getNotPendingLists = async () => {
 
 const setCategoryStatus = async (categoryId, status) => {
   const queryResponse = await knex.withSchema(SCHEMA_BFF).table('marketplace_categories')
-    .where({ id: categoryId })
-    .update({ 'status': status });
+    .where({id: categoryId})
+    .update({'status': status});
   return queryResponse;
 };
 
 const urlChecked = async (id) => {
-  let setQuery = { 'checked': true };
-  const filter = { 'id': id };
+  let setQuery = {'checked': true};
+  const filter = {'id': id};
   const resp = await knex.table(table).where(filter).update(setQuery);
-  return { success:  resp > 0 };
+  return {success: resp > 0};
 };
 
 const remove = async (filter) => {
@@ -128,6 +131,24 @@ const saveAttempts = async (message, typeScrap) => {
   return queryResponse.rowCount;
 };
 
+const getPrioritySellers = async () => {
+  return await knex.withSchema(SCHEMA_BFF)
+    .table(`sellers as s`)
+    .select('s.id', 'su.url')
+    .join('status_seller as ss', 's.status', '=', 'ss.id')
+    .joinRaw('left join mm_crawler.urllist su on s.id = su.id')
+    .where('su.category', '=', 'Seller')
+    .where('s.priority', '=', '1')
+    .first();
+};
+
+const updateStatusSeller = async (id, status, priority = 1) => {
+  return await knex.withSchema(SCHEMA_BFF)
+    .table(`sellers as s`)
+    .update({'status_priority': status, priority})
+    .where('s.id', '=', id);
+};
+
 module.exports = {
   read,
   saveList,
@@ -141,5 +162,7 @@ module.exports = {
   saveAttempts,
   getPendingLists,
   getNotPendingLists,
-  setCategoryStatus
+  setCategoryStatus,
+  getPrioritySellers,
+  updateStatusSeller,
 };
