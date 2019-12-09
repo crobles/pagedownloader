@@ -210,7 +210,6 @@ const attempt = async (period) => {
       const urlProductsSeller = $('.publications__subtitle', sellerHrml)[0].attribs.href;
       let existNextUrl = true;
       let nextUrl = null;
-      const productsSeller = [];
       while (existNextUrl) {
         const products = await getProductsList({
           url: nextUrl || urlProductsSeller,
@@ -218,11 +217,10 @@ const attempt = async (period) => {
           origin: 'Manual',
           id: prioritizedSeller.id,
         });
-        await asyncForEach(products.list, (product) => {
-          productsSeller.push(product);
-        });
-        existNextUrl = !!(productsSeller.nextUrl || productsSeller[productsSeller.length - 1].category === 'List');
-        nextUrl = (productsSeller.nextUrl || productsSeller[productsSeller.length - 1].url);
+        existNextUrl = !!(products.nextUrl || products.list[products.list.length - 1].category === 'List');
+        if (existNextUrl) {
+          nextUrl = products.nextUrl || products.list[products.list.length - 1].url;
+        }
       }
       await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_FINISHED, 0);
     } catch (e) {
