@@ -142,11 +142,32 @@ const getPrioritySellers = async () => {
     .first();
 };
 
-const updateStatusSeller = async (id, status, priority = 1) => {
+const getUnnotificatedSeller = async () => {
   return await knex.withSchema(SCHEMA_BFF)
     .table(`sellers as s`)
-    .update({'status_priority': status, priority})
+    .select('s.id', 's.nombreFantasia')
+    .where('s.notificated', '=', '0')
+    .first();
+};
+
+const updateStatusSeller = async (id, status, priority = 1, notificated = 0) => {
+  return await knex.withSchema(SCHEMA_BFF)
+    .table(`sellers as s`)
+    .update({'status_priority': status, priority, notificated})
     .where('s.id', '=', id);
+};
+
+const updateNotificationSeller = async (id, notificated = 0) => {
+  return await knex.withSchema(SCHEMA_BFF)
+    .table(`sellers as s`)
+    .update({notificated})
+    .where('s.id', '=', id);
+};
+
+const writeNotification = async (data) => {
+  let dataSchema = Object.keys(data[0]);
+  dataSchema.unshift('id');
+  return await knex('mm_bff.notifications').insert(data, dataSchema);
 };
 
 module.exports = {
@@ -165,4 +186,7 @@ module.exports = {
   setCategoryStatus,
   getPrioritySellers,
   updateStatusSeller,
+  writeNotification,
+  getUnnotificatedSeller,
+  updateNotificationSeller
 };

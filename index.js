@@ -8,9 +8,8 @@ require('log-timestamp');
 
 let browser = null;
 const STATUS_RUNNING = 'Running';
-/*const STATUS_WAITING = 'Waiting';
-const STATUS_STOPPED = 'Stopped';*/
 const STATUS_FINISHED = 'Finished';
+const NOTIFICATED_SELLER = 1;
 
 
 const getUrlList = async (url, origin, category = null) => {
@@ -207,6 +206,18 @@ const attempt = async (period) => {
 
   const prioritizedSeller = await models.url.getPrioritySellers();
   const prioritizedCategories = await models.url.getPendingLists();
+  const unnotificatedSellers = await models.url.getUnnotificatedSeller();
+  if (unnotificatedSellers) {
+    await models.url.writeNotification([{
+      message: `Ya se han descargado todos los productos de ${unnotificatedSellers.nombreFantasia} desde MercadoLibre. Encuéntralos en el
+módulo de Productos`,
+      controls: {},
+      status: 1,
+      credentialId: '-1',
+    }]);
+    await models.url.updateNotificationSeller(unnotificatedSellers.id, NOTIFICATED_SELLER);
+  }
+
   if (prioritizedSeller) {
     try {
       await models.url.updateStatusSeller(prioritizedSeller.id, STATUS_RUNNING);
